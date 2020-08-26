@@ -1,0 +1,128 @@
+version: '3'
+
+networks:
+  laravel:
+
+services:
+  #connection services
+  app:
+    build:
+      args:
+        user: sk123
+        uid: "${UID}"
+      context: .
+      dockerfile: Dockerfile
+    image: laravel
+    container_name: DockerForLaravelTest
+    restart: unless-stopped
+    working_dir: /var/www/html/DockerForLaravelTest/Test
+    volumes:
+      - ./:/var/www/html/DockerForLaravelTest/Test
+    networks:
+      - laravel
+  db:
+    image: mysql:5.7.22
+    container_name: db
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: "${DB_DATABASE}"
+      MYSQL_USER: "${DB_USERNAME}"
+      MYSQL_PASSWORD: "${DB_PASSWORD}"
+      MYSQL_ROOT_PASSWORD: "${DB_ROOT_PASSWORD}"
+      SERVICE_TAGS: dev
+      SERVICE_NAME: mysql
+    volumes:
+      - ./docker-compose/mysql:/docker-entrypoint-initdb.d
+    networks:
+      - laravel
+  nginx:
+    image: nginx:stable-alpine
+    container_name: nginx
+    restart: unless-stopped
+    ports:
+      - "8088:80"
+    volumes:
+      - ./:/var/www/html/DockerForLaravelTest/Test
+      - ./docker-compose/nginx:/etc/nginx/conf.d
+    depends_on:
+      - app
+      - db
+    networks:
+      - laravel
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    container_name: phpmyadmin
+    restart: unless-stopped
+    stdin_open: true
+    tty: true
+    ports:
+      - "8080:80"
+    depends_on:
+      - db
+      - nginx
+    environment:
+      PMA_PORT: 3306
+      PMA_HOST: db
+      MYSQL_USER: root
+      MYSQL_ROOT_PASSWORD: "${DB_ROOT_PASSWORD}"
+    networks:
+      - laravel
+  artisan:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: artisan
+    depends_on:
+      - app
+      - db
+    working_dir: /var/www/html/DockerForLaravelTest/Test
+    networks:
+      - laravel
+  #application services
+  create:
+    build:
+      context: .
+      dockerfile: /var/www/html/DockerForLaravelTest/Test/docker/create/Dockerfile
+    container_name: create
+    stdin_open: true
+    tty: true
+    volumes:
+      - ./docker/create:/var/www/html/DockerForLaravelTest/Test/docker/create
+    networks:
+      - laravel
+  read:
+    build:
+      context: .
+      dockerfile: /var/www/html/DockerForLaravelTest/Test/docker/read/Dockerfile
+    container_name: read
+    stdin_open: true
+    tty: true
+    volumes:
+      - ./docker/read:/var/www/html/DockerForLaravelTest/Test/docker/read
+    networks:
+      - laravel
+  update:
+    build:
+      context: .
+      dockerfile: /var/www/html/DockerForLaravelTest/Test/docker/update/Dockerfile
+    container_name: update
+    stdin_open: true
+    tty: true
+    volumes:
+      - ./docker/update:/var/www/html/DockerForLaravelTest/Test/docker/update
+    networks:
+      - laravel
+  delete:
+    build:
+      context: .
+      dockerfile: /var/www/html/DockerForLaravelTest/Test/docker/delete/Dockerfile
+    container_name: delete
+    stdin_open: true
+    tty: true
+    volumes:
+      - ./docker/delete:/var/www/html/DockerForLaravelTest/Test/docker/delete
+    networks:
+      - laravel
+
+
+
